@@ -1,0 +1,69 @@
+# TOOLS.md -- Infrastructure Map
+
+## My Workspace
+
+- **CLAUDE.md**: `~/.claude-lab/{{AGENT_ID}}/.claude/CLAUDE.md` (identity)
+- **Core**: `~/.claude-lab/{{AGENT_ID}}/.claude/core/` (AGENTS, USER, rules, warm, hot, MEMORY)
+- **Skills**: `~/.claude-lab/{{AGENT_ID}}/.claude/skills/` (symlink to shared)
+- **Secrets**: `~/.claude-lab/shared/secrets/` (chmod 700, shared)
+
+## Memory 4-Layer
+
+| Layer | File | Mutability |
+|-------|------|------------|
+| IDENTITY | CLAUDE.md, rules.md | manual only |
+| YELLOW | USER.md, AGENTS.md, TOOLS.md | agent on trigger |
+| WARM 14d | core/warm/decisions.md | auto-rotate |
+| HOT 24h | core/hot/recent.md | gateway auto |
+| COLD | core/MEMORY.md | on-demand Read |
+| L4 | OpenViking semantic search | curl on-demand |
+
+## 10 Base Skills
+
+| # | Skill | What it does | API key needed |
+|---|-------|-------------|----------------|
+| 1 | **groq-voice** | Voice transcription (Groq Whisper) | groq.com (free) |
+| 2 | **superpowers** | TDD, debugging, planning, code-review, brainstorm | none |
+| 3 | **gws** | Google Workspace: Gmail, Calendar, Drive | Google OAuth |
+| 4 | **youtube-transcript** | YouTube video transcription | none |
+| 5 | **twitter** | Read tweets, profiles, search | optional (SocialData) |
+| 6 | **quick-reminders** | Reminders via nohup sleep | none |
+| 7 | **markdown-new** | Create markdown documents | none |
+| 8 | **excalidraw** | Diagrams and schemas | none |
+| 9 | **datawrapper** | Charts and tables | datawrapper.de (free) |
+| 10 | **perplexity-research** | Web research via Perplexity API | perplexity.ai (paid) |
+
+## Secrets
+
+| What | Path | How to get |
+|------|------|-----------|
+| Groq API | secrets/groq.env | groq.com -- free |
+| Perplexity | secrets/perplexity.env | perplexity.ai -- paid |
+| Google OAuth | secrets/google-credentials.json | console.cloud.google.com |
+| Datawrapper | secrets/datawrapper.env | datawrapper.de -- free |
+
+## Servers
+
+| Server | IP | Role | SSH |
+|--------|----|------|-----|
+| {{SERVER_1_NAME}} | {{SERVER_1_IP}} | {{SERVER_1_ROLE}} | {{SERVER_1_SSH}} |
+| {{SERVER_2_NAME}} | {{SERVER_2_IP}} | {{SERVER_2_ROLE}} | {{SERVER_2_SSH}} |
+
+## Services
+
+| Service | Port | Description |
+|---------|------|-------------|
+| openviking | 1933 | Semantic memory |
+| gateway | -- | Telegram gateway |
+| {{SERVICE_1_NAME}} | {{SERVICE_1_PORT}} | {{SERVICE_1_DESC}} |
+
+## GitHub
+
+- Account: {{GITHUB_USERNAME}}
+- CLI: `gh` (authorized)
+- Workflow: branches + PR, NEVER push to main
+
+## Secrets (paths only, never values)
+
+- `~/.claude-lab/shared/secrets/` -- all secrets here
+- Do NOT output, commit, or copy between servers
