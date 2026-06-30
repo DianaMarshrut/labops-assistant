@@ -1,0 +1,21 @@
+[Unit]
+Description=Claude AI Telegram Gateway
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User={{USER}}
+Group={{USER}}
+WorkingDirectory=/home/{{USER}}/labops-assistant
+ExecStart=/home/{{USER}}/labops-assistant/.venv/bin/python /home/{{USER}}/labops-assistant/gateway.py
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=labops-assistant
+Environment=HOME=/home/{{USER}}
+Environment=PATH=/home/{{USER}}/.local/bin:/usr/local/bin:/usr/bin:/bin
+
+[Install]
+WantedBy=multi-user.target
