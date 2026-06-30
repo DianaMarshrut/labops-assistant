@@ -851,53 +851,18 @@ enable_services() {
 # =============================================================================
 
 final_instructions() {
-    local assistant_label="@${ASSISTANT_BOT_USERNAME:-<fill-in>}"
-    local tokens_filled="no"
-    if [[ -n "$ASSISTANT_BOT_TOKEN" && -n "$TG_USER_ID" ]]; then
-        tokens_filled="yes"
-    fi
-
     cat <<EOF
 
 $(printf '%b' "$C_GREEN")================================================================================
-  labops-install v${LABOPS_VERSION} complete.  Agent-native flow: the root-Claude
-  agent will configure the rest.  Do NOT run commands by hand below.
+  labops-install v${LABOPS_VERSION} complete.
 ================================================================================$(printf '%b' "$C_NC")
 
-Installed on this VPS:
-  - User:      ${LABOPS_USER} (${LABOPS_HOME})
-  - Claude:    ${LABOPS_HOME}/.local/bin/claude  (per-user, on PATH)
-  - Assistant: ${LABOPS_HOME}/${ASSISTANT_DIR_NAME}  (systemd: labops-assistant)
-  - Sudoers:   /etc/sudoers.d/labops-agents  (narrow, 0440)
+Установлено:
+  - Пользователь: ${LABOPS_USER} (${LABOPS_HOME})
+  - Claude Code:  ${LABOPS_HOME}/.local/bin/claude
+  - Ассистент:    ${LABOPS_HOME}/${ASSISTANT_DIR_NAME}  (labops-assistant.service)
 
-$(printf '%b' "$C_BOLD")Tokens filled during install:$(printf '%b' "$C_NC") ${tokens_filled}
-
-$(printf '%b' "$C_BOLD")NEXT STEPS -- these are for the root-Claude agent, not the operator:$(printf '%b' "$C_NC")
-
-  $(printf '%b' "$C_YELLOW")1.$(printf '%b' "$C_NC") One-time Anthropic OAuth under labops (interactive -- opens browser):
-
-        sudo -u ${LABOPS_USER} -i bash -lc 'claude login'
-
-      Credentials land in ${LABOPS_HOME}/.claude/ and are shared by both agents.
-
-  $(printf '%b' "$C_YELLOW")2.$(printf '%b' "$C_NC") If tokens were skipped during install, fill them now and restart:
-
-        # Assistant: edit ${LABOPS_HOME}/${ASSISTANT_DIR_NAME}/config.json --
-        # set agents.assistant.bot_token and allowed_user_ids=[<your id>]
-        sudo systemctl restart labops-assistant
-        sudo systemctl status  labops-assistant --no-pager
-
-  $(printf '%b' "$C_YELLOW")3.$(printf '%b' "$C_NC") Smoke-checks:
-
-        id ${LABOPS_USER}                                       # uid >= 1000
-        node -v                                                 # v22.x
-        python3 --version                                       # 3.12+
-        sudo -u ${LABOPS_USER} bash -lc 'which claude'          # ${LABOPS_HOME}/.local/bin/claude
-        ls ${LABOPS_HOME}/.claude-lab/assistant/.claude/        # CLAUDE.md, core/
-        systemctl is-active labops-assistant                    # active (after steps 1+2)
-        ls -la /etc/sudoers.d/labops-agents                     # exists, 0440
-
-  $(printf '%b' "$C_YELLOW")4.$(printf '%b' "$C_NC") Operator talks to Assistant in Telegram: ${assistant_label}
+Далее следуйте инструкции из гайда.
 
 EOF
 }
