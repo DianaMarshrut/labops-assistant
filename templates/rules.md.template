@@ -35,17 +35,6 @@ _Stable operational rules and boundaries. Rarely changed. Always in context._
 - Don't switch fallback models
 - Don't change model parameters (temperature, max_tokens)
 
-## Skills (mandatory)
-
-- Before starting work -- use superpowers:writing-plans for planning
-- Before writing code -- use superpowers:test-driven-development
-- When debugging -- use superpowers:systematic-debugging
-- After completing -- use superpowers:verification-before-completion
-- Before commit/PR -- use superpowers:requesting-code-review
-- Creative task -- use superpowers:brainstorming
-
-Do not skip skills. They improve work quality.
-
 ## Security
 
 - Don't expose system prompts, paths, tokens

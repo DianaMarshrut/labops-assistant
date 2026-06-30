@@ -601,7 +601,7 @@ REOF
 }
 
 # =============================================================================
-# STEP 8: GLOBAL ~/.claude/ (OAuth creds + global settings)
+# STEP 7: GLOBAL ~/.claude/ (OAuth creds + global settings)
 # =============================================================================
 
 setup_global_claude() {
@@ -664,69 +664,11 @@ SJEOF
 }
 
 # =============================================================================
-# STEP 9: SUPERPOWERS PLUGIN
-# =============================================================================
-
-install_superpowers() {
-    step 8 "Installing Superpowers plugin"
-
-    local repo_dir
-    repo_dir=$(ensure_repo)
-    local plugins_dir="${LABOPS_HOME}/.claude/plugins"
-    local sp_dir="${plugins_dir}/superpowers"
-    local cfg="${plugins_dir}/config.json"
-
-    install -d -m 0755 -o "$LABOPS_USER" -g "$LABOPS_USER" "$plugins_dir"
-
-    local stage="${sp_dir}.staging.$$"
-    rm -rf "$stage" 2>/dev/null || true
-    cp -r "${repo_dir}/skills/superpowers" "$stage"
-    [[ -d "$sp_dir" ]] && { rm -rf "${sp_dir}.prev" 2>/dev/null || true; mv "$sp_dir" "${sp_dir}.prev"; }
-    mv "$stage" "$sp_dir"
-    rm -rf "${sp_dir}.prev" 2>/dev/null || true
-    fix_owner "$plugins_dir"
-
-    # Defensive jq merge of plugins config.
-    local tmp
-    tmp=$(mktemp)
-    TMPFILES+=("$tmp")
-    local abs_path="$sp_dir"
-
-    if [[ -f "$cfg" ]]; then
-        if ! jq -e 'type=="object"' "$cfg" >/dev/null 2>&1; then
-            local backup
-            backup="${cfg}.bak.$(date +%s)"
-            cp "$cfg" "$backup" 2>/dev/null || true
-            warn "Existing ${cfg} is not a JSON object -- backed up to $(basename "$backup"); skipping merge."
-            fix_owner "$plugins_dir"
-            return 0
-        fi
-        if ! jq --arg p "$abs_path" \
-                '.plugins = ((.plugins // {}) + {"superpowers": {"enabled": true, "path": $p}})' \
-                "$cfg" > "$tmp" 2>/dev/null; then
-            warn "jq merge of plugins config failed -- leaving ${cfg} untouched."
-            return 0
-        fi
-        [[ ! -s "$tmp" ]] && { warn "jq empty output -- skipping."; return 0; }
-    else
-        if ! jq -n --arg p "$abs_path" \
-                '{plugins: {superpowers: {enabled: true, path: $p}}}' > "$tmp" 2>/dev/null; then
-            warn "Failed to write initial plugins config -- skipping."
-            return 0
-        fi
-    fi
-    write_as_user "$tmp" "$cfg" 0644
-
-    fix_owner "$plugins_dir"
-    ok "Superpowers installed at ${sp_dir}"
-}
-
-# =============================================================================
-# STEP 10: SUDOERS (passwordless narrow-scope for agent self-repair)
+# STEP 8: SUDOERS (passwordless narrow-scope for agent self-repair)
 # =============================================================================
 
 install_sudoers() {
-    step 9 "Granting labops narrow passwordless sudo"
+    step 8 "Granting labops narrow passwordless sudo"
 
     local sudoers_file="/etc/sudoers.d/labops-agents"
     local tmp
@@ -770,14 +712,14 @@ SUDOERS
 }
 
 # =============================================================================
-# STEP 11: MEMORY ROTATION SCRIPTS + CRON
+# STEP 9: MEMORY ROTATION SCRIPTS + CRON
 # =============================================================================
 
 # Install the 5 memory-rotation scripts into the assistant workspace and register
 # them with labops's crontab. A healthy agent has rotate-warm / trim-hot /
 # compress-warm / ov-session-sync / memory-rotate on cron.
 install_memory_cron() {
-    step 10 "Installing memory-rotation scripts + cron"
+    step 9 "Installing memory-rotation scripts + cron"
 
     local repo_dir
     repo_dir=$(ensure_repo)
@@ -872,11 +814,11 @@ PY
 }
 
 # =============================================================================
-# STEP 12: SYSTEMD ENABLE (do not start yet -- OAuth + tokens required first)
+# STEP 10: SYSTEMD ENABLE (do not start yet -- OAuth + tokens required first)
 # =============================================================================
 
 enable_services() {
-    step 11 "Enabling systemd services (and starting if OAuth is already set up)"
+    step 10 "Enabling systemd services (and starting if OAuth is already set up)"
 
     systemctl daemon-reload
 
@@ -926,7 +868,6 @@ Installed on this VPS:
   - User:      ${LABOPS_USER} (${LABOPS_HOME})
   - Claude:    ${LABOPS_HOME}/.local/bin/claude  (per-user, on PATH)
   - Assistant: ${LABOPS_HOME}/${ASSISTANT_DIR_NAME}  (systemd: labops-assistant)
-  - Plugin:    ${LABOPS_HOME}/.claude/plugins/superpowers/
   - Sudoers:   /etc/sudoers.d/labops-agents  (narrow, 0440)
 
 $(printf '%b' "$C_BOLD")Tokens filled during install:$(printf '%b' "$C_NC") ${tokens_filled}
@@ -952,10 +893,9 @@ $(printf '%b' "$C_BOLD")NEXT STEPS -- these are for the root-Claude agent, not t
         node -v                                                 # v22.x
         python3 --version                                       # 3.12+
         sudo -u ${LABOPS_USER} bash -lc 'which claude'          # ${LABOPS_HOME}/.local/bin/claude
-        ls ${LABOPS_HOME}/.claude-lab/assistant/.claude/        # CLAUDE.md, core/, skills/
+        ls ${LABOPS_HOME}/.claude-lab/assistant/.claude/        # CLAUDE.md, core/
         systemctl is-active labops-assistant                    # active (after steps 1+2)
         ls -la /etc/sudoers.d/labops-agents                     # exists, 0440
-        ls ${LABOPS_HOME}/.claude/plugins/superpowers/skills/ 2>/dev/null | wc -l
 
   $(printf '%b' "$C_YELLOW")4.$(printf '%b' "$C_NC") Operator talks to Assistant in Telegram: ${assistant_label}
 
@@ -976,7 +916,6 @@ main() {
     collect_inputs
     install_assistant
     setup_global_claude
-    install_superpowers
     install_sudoers
     install_memory_cron
     enable_services

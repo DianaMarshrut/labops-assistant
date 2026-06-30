@@ -4,7 +4,6 @@
 
 - **CLAUDE.md**: `~/.claude-lab/{{AGENT_ID}}/.claude/CLAUDE.md` (identity)
 - **Core**: `~/.claude-lab/{{AGENT_ID}}/.claude/core/` (AGENTS, USER, rules, warm, hot, MEMORY)
-- **Skills**: `~/.claude-lab/{{AGENT_ID}}/.claude/skills/` (symlink to shared)
 - **Secrets**: `~/.claude-lab/shared/secrets/` (chmod 700, shared)
 
 ## Memory 4-Layer
@@ -23,7 +22,6 @@
 | # | Skill | What it does | API key needed |
 |---|-------|-------------|----------------|
 | 1 | **groq-voice** | Voice transcription (Groq Whisper) | groq.com (free) |
-| 2 | **superpowers** | TDD, debugging, planning, code-review, brainstorm | none |
 | 3 | **gws** | Google Workspace: Gmail, Calendar, Drive | Google OAuth |
 | 4 | **youtube-transcript** | YouTube video transcription | none |
 | 5 | **twitter** | Read tweets, profiles, search | optional (SocialData) |

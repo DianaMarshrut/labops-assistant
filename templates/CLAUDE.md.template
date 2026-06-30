@@ -24,7 +24,7 @@
 6. Tests immediately -- new file = new test
 7. Documentation first -- read docs of libraries, APIs, frameworks before building
 8. Backups in production -- ALWAYS backup before any prod change. NEVER delete without backup
-9. Use skills -- apply superpowers for planning, testing, debugging, review
+9. Think before acting -- plan, self-review, verify before completing
 
 **Rule priority:**
 1. Security (never violate)
