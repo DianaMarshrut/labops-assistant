@@ -1,19 +1,19 @@
 ---
 name: superpowers
-description: "Agentic skills framework (pavelded fork): TDD, debugging, planning, code-review, git-worktrees, parallel agents. 15 skills with .tasks.json persistence between sessions."
+description: "Agentic skills framework (labopsai fork): TDD, debugging, planning, code-review, git-worktrees, parallel agents. 15 skills with .tasks.json persistence between sessions."
 user-invocable: false
 ---
 
-# Superpowers (pavelded)
+# Superpowers (labopsai)
 
-[Superpowers](https://github.com/pavelded/superpowers) -- extended fork of obra/superpowers for Claude Code.
+[Superpowers](https://github.com/labopsai/superpowers) -- extended fork of obra/superpowers for Claude Code.
 15 built-in skills that auto-activate by development context.
 Key advantage: `.tasks.json` persistence -- plans survive between sessions.
 
 ## Install
 
 ```bash
-claude plugins marketplace add pavelded/superpowers
+claude plugins marketplace add labopsai/superpowers
 claude plugins install superpowers@superpowers-marketplace
 ```
 
@@ -61,6 +61,6 @@ proven development workflows that activate automatically.
 
 ## Reference
 
-- Repo: https://github.com/pavelded/superpowers
+- Repo: https://github.com/labopsai/superpowers
 - Upstream: https://github.com/obra/superpowers
 - License: MIT

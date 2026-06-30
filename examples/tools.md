@@ -24,7 +24,7 @@
 ## OpenViking
 
 - URL: http://localhost:1933
-- Account: myproject
+- Account: <your-account>
 - Key: ~/.claude-lab/shared/secrets/openviking.key
 
 ## GitHub

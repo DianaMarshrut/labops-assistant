@@ -140,7 +140,7 @@ GITHUB_USERNAME="${GITHUB_USERNAME:-your-username}"
 # OpenViking account
 ask "OpenViking account name (or skip)"
 read -r OPENVIKING_ACCOUNT
-OPENVIKING_ACCOUNT="${OPENVIKING_ACCOUNT:-myproject}"
+OPENVIKING_ACCOUNT="${OPENVIKING_ACCOUNT:-}"
 
 # ============================================================
 # Step 3: Confirm
@@ -340,7 +340,7 @@ SKILLS_DST="${SHARED}/skills"
 
 log "Installing base skills..."
 
-SKILL_LIST="groq-voice superpowers markdown-new excalidraw datawrapper perplexity-research gws youtube-transcript twitter quick-reminders"
+SKILL_LIST="superpowers"
 
 for skill in $SKILL_LIST; do
     if [ -d "${SKILLS_SRC}/${skill}" ]; then
@@ -372,8 +372,8 @@ if [[ "$SETUP_GATEWAY_LOWER" != "n" ]]; then
     if [ ! -f "${GATEWAY_DIR}/gateway.py" ]; then
         log "Downloading gateway from assistant-telegram-gateway..."
         GATEWAY_REPO="/tmp/assistant-gateway-install-$$"
-        gh repo clone pavelded/assistant-telegram-gateway "${GATEWAY_REPO}" 2>/dev/null || \
-        git clone "https://github.com/pavelded/assistant-telegram-gateway.git" "${GATEWAY_REPO}" 2>/dev/null
+        gh repo clone labopsai/labops-assistant "${GATEWAY_REPO}" 2>/dev/null || \
+        git clone "https://github.com/labopsai/labops-assistant.git" "${GATEWAY_REPO}" 2>/dev/null
 
         if [ -f "${GATEWAY_REPO}/gateway.py" ]; then
             cp "${GATEWAY_REPO}/gateway.py" "${GATEWAY_DIR}/gateway.py"
@@ -383,7 +383,7 @@ if [[ "$SETUP_GATEWAY_LOWER" != "n" ]]; then
             log "Configure: cp ${GATEWAY_DIR}/config.example.json ${GATEWAY_DIR}/config.json"
             log "Features: reactions, inline buttons, webhook API, topic routing, streaming modes"
         else
-            warn "Could not download gateway. Install manually from: github.com/pavelded/assistant-telegram-gateway"
+            warn "Could not download gateway. Install manually from: github.com/labopsai/labops-assistant"
         fi
         rm -rf "${GATEWAY_REPO}"
     else
@@ -592,7 +592,6 @@ echo "       echo 'your-key' > ${SHARED}/secrets/transcript-api-key    # youtube
 echo "       echo 'your-key' > ${SHARED}/secrets/socialdata-api-key    # twitter (optional)"
 echo "       echo 'your-key' > ${SHARED}/secrets/datawrapper.env       # datawrapper (free)"
 echo "       echo 'your-key' > ${SHARED}/secrets/perplexity.env        # perplexity (paid)"
-echo "       echo 'your-key' > ${SHARED}/secrets/openviking.key        # semantic memory"
 echo "       echo 'bot-token' > ${SHARED}/secrets/telegram/bot-token-${AGENT_ID}"
 echo ""
 echo "    3. Launch agent:"

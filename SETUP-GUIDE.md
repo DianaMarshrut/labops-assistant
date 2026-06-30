@@ -47,7 +47,7 @@ Opus -- лучшая модель для архитектурных решени
 ```
 Установи плагин Superpowers. Выполни обе команды через Bash:
 
-claude plugins marketplace add pavelded/superpowers
+claude plugins marketplace add labopsai/superpowers
 claude plugins install superpowers@superpowers-marketplace
 
 Проверь: claude plugins list
@@ -79,7 +79,7 @@ gh auth login
 Это главный шаг. Скрипт спросит имя агента, роль, модель, твоё имя -- и создаст всё автоматически.
 
 ```bash
-git clone https://github.com/pavelded/labops-architecture-claude-code.git
+git clone https://github.com/labopsai/labops-assistant.git
 cd labops-architecture-claude-code
 bash install.sh
 ```
@@ -88,7 +88,7 @@ bash install.sh
 
 | Вопрос | Пример ответа | Что делает |
 |--------|---------------|------------|
-| Agent name | `homer` | Имя workspace: `~/.claude-lab/homer/` |
+| Agent name | `assistant` | Имя workspace: `~/.claude-lab/homer/` |
 | Agent role | `Coder, architect` | Записывается в SOUL |
 | Primary model | `Claude Opus 4.6` | В AGENTS.md |
 | Your name | `Даши` | В USER.md |
@@ -120,7 +120,7 @@ bash install.sh
 │       ├── excalidraw/          диаграммы
 │       └── perplexity-research/  веб-ресёрч (Perplexity API)
 │
-└── homer/.claude/               твой агент
+└── assistant/.claude/               твой агент
     ├── CLAUDE.md                SOUL + @include (identity)
     ├── core/
     │   ├── AGENTS.md            модели, субагенты (on-demand)
@@ -142,8 +142,8 @@ bash install.sh
 ## Шаг 6: Проверь тестами
 
 ```bash
-git clone https://github.com/pavelded/architecture-brain-tests.git /tmp/architecture-brain-tests
-cd /tmp/architecture-brain-tests
+git clone https://github.com/labopsai/labops-assistant.git /tmp/labops-assistant
+cd /tmp/labops-assistant
 pip install pytest
 python3 -m pytest tests/ -v
 ```
@@ -157,7 +157,7 @@ python3 -m pytest tests/ -v
 Скопируй этот промпт в Claude Code (запусти из workspace агента):
 
 ```
-cd ~/.claude-lab/homer/.claude
+cd ~/.claude-lab/assistant/.claude
 
 Помоги заполнить identity-файлы:
 
@@ -200,14 +200,14 @@ cd ~/.claude-lab/homer/.claude
 ```
 Настрой cron-скрипты для автоматической ротации памяти.
 
-1. Скопируй скрипты из labops-architecture-claude-code/scripts/ в ~/.claude-lab/homer/.claude/scripts/
+1. Скопируй скрипты из labops-architecture-claude-code/scripts/ в ~/.claude-lab/assistant/.claude/scripts/
 2. Сделай их исполняемыми: chmod +x scripts/*.sh
 3. Добавь в crontab:
-   30 4 * * * ~/.claude-lab/homer/.claude/scripts/rotate-warm.sh
-   0 5 * * * ~/.claude-lab/homer/.claude/scripts/trim-hot.sh
-   0 6 * * * ~/.claude-lab/homer/.claude/scripts/compress-warm.sh
-   30 6 * * * ~/.claude-lab/homer/.claude/scripts/ov-session-sync.sh
-   0 21 * * * ~/.claude-lab/homer/.claude/scripts/memory-rotate.sh
+   30 4 * * * ~/.claude-lab/assistant/.claude/scripts/rotate-warm.sh
+   0 5 * * * ~/.claude-lab/assistant/.claude/scripts/trim-hot.sh
+   0 6 * * * ~/.claude-lab/assistant/.claude/scripts/compress-warm.sh
+   30 6 * * * ~/.claude-lab/assistant/.claude/scripts/ov-session-sync.sh
+   0 21 * * * ~/.claude-lab/assistant/.claude/scripts/memory-rotate.sh
 
 ВАЖНО: Без этих скриптов hot/recent.md вырастет до 80KB+ за день
 и займёт 70% контекстного окна. Cron -- обязательно.
@@ -226,14 +226,13 @@ cd ~/.claude-lab/homer/.claude
 
 ```
 Установи Telegram-плагин для Claude Code:
-https://github.com/RichardAtCT/claude-code-telegram
 
 1. Создай бота через @BotFather в Telegram
 2. Установи: uv tool install claude-code-telegram
 3. Настрой переменные:
    export CLAUDE_CODE_TELEGRAM_BOT_TOKEN="токен-от-BotFather"
    export CLAUDE_CODE_TELEGRAM_ALLOWED_USERS="твой-user-id"
-   export CLAUDE_CODE_TELEGRAM_WORKDIR="$HOME/.claude-lab/homer/.claude"
+   export CLAUDE_CODE_TELEGRAM_WORKDIR="$HOME/.claude-lab/assistant/.claude"
 4. Запусти: claude-code-telegram
 ```
 
@@ -241,7 +240,7 @@ https://github.com/RichardAtCT/claude-code-telegram
 
 ```
 Разверни Telegram Gateway:
-https://github.com/pavelded/assistant-telegram-gateway
+https://github.com/labopsai/labops-assistant
 
 1. git clone репозиторий
 2. cp config.example.json config.json
@@ -258,7 +257,7 @@ https://github.com/pavelded/assistant-telegram-gateway
 Скопируй этот промпт -- он «активирует» агента:
 
 ```
-Прочитай все файлы в своём workspace (~/.claude-lab/homer/.claude/):
+Прочитай все файлы в своём workspace (~/.claude-lab/assistant/.claude/):
 - CLAUDE.md (твой SOUL)
 - core/AGENTS.md (модели, субагенты)
 - core/USER.md (мой профиль)
@@ -288,7 +287,7 @@ https://github.com/pavelded/assistant-telegram-gateway
 Проверь что всё работает. Пройди по каждому пункту:
 
 1. tree ~/.claude-lab/ -L 4 -- структура на месте?
-2. cat ~/.claude-lab/homer/.claude/CLAUDE.md -- @include на месте?
+2. cat ~/.claude-lab/assistant/.claude/CLAUDE.md -- @include на месте?
 3. ls ~/.claude-lab/shared/skills/ -- 10 скиллов?
 4. cat ~/.claude/CLAUDE.md -- глобальные правила?
 5. cat ~/.claude/rules/*.md -- языковые конвенции?

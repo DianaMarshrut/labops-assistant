@@ -5,7 +5,7 @@ Universal architecture for Claude Code agents with local memory layers, hooks, s
 ## Quick Install
 
 ```bash
-git clone https://github.com/pavelded/labops-architecture-claude-code.git
+git clone https://github.com/labopsai/labops-assistant.git
 cd labops-architecture-claude-code
 bash install.sh
 ```
@@ -374,9 +374,8 @@ Each agent writes to its own namespace but searches across all. Cross-agent sear
 
 | Repo | Description |
 |------|-------------|
-| **[labops-architecture-claude-code](https://github.com/pavelded/labops-architecture-claude-code)** | Architecture, templates, scripts, install.sh |
-| **[assistant-telegram-gateway](https://github.com/pavelded/assistant-telegram-gateway)** | Gateway: Telegram -> Claude Code |
-| **[architecture-brain-tests](https://github.com/pavelded/architecture-brain-tests)** | 800 tests verifying everything above |
+| **[labops-architecture-claude-code](https://github.com/labopsai/labops-assistant)** | Architecture, templates, scripts, install.sh |
+| **[assistant-telegram-gateway](https://github.com/labopsai/labops-assistant)** | Gateway: Telegram -> Claude Code |
 
 Test categories: T20 (security), T26 (models), T27 (COMPACT_WINDOW), T28 (Learnings v2), and 25+ more.
 
@@ -384,8 +383,7 @@ Test categories: T20 (security), T26 (models), T27 (COMPACT_WINDOW), T28 (Learni
 
 | Method | Use Case | Repo |
 |--------|----------|------|
-| **claude-code-telegram** (plugin) | Interactive coding via Telegram | [RichardAtCT/claude-code-telegram](https://github.com/RichardAtCT/claude-code-telegram) |
-| **Telegram Gateway** (standalone) | Autonomous multi-agent: voice, progress, memory, 3+ bots | [pavelded/assistant-telegram-gateway](https://github.com/pavelded/assistant-telegram-gateway) |
+| **Telegram Gateway** (standalone) | Autonomous multi-agent: voice, progress, memory, 3+ bots | [labopsai/labops-assistant](https://github.com/labopsai/labops-assistant) |
 
 ## Documentation
 

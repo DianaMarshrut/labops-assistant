@@ -89,7 +89,6 @@ Create `~/.claude-lab/reviewer/.claude/core/AGENTS.md`:
 ## OpenViking (optional)
 
 - URL: http://localhost:1933 (use Tailscale IP for multi-VPS: check `ss -tlnp | grep 1933`)
-- Key: ~/.claude-lab/shared/secrets/openviking.key
 - Search: POST /api/v1/search/find
 - Sync: Stop hook + cron via ov-session-sync.sh (see MEMORY.md)
 ```
@@ -191,7 +190,7 @@ Full-featured: voice messages, progress display, memory:
 
 ```bash
 # Clone gateway
-git clone https://github.com/pavelded/assistant-telegram-gateway.git
+git clone https://github.com/labopsai/labops-assistant.git
 cd assistant-telegram-gateway
 
 # Configure
@@ -202,7 +201,7 @@ cp config.example.json config.json
 python3 gateway.py
 ```
 
-See [assistant-telegram-gateway](https://github.com/pavelded/assistant-telegram-gateway) for details.
+See [assistant-telegram-gateway](https://github.com/labopsai/labops-assistant) for details.
 
 ## Step 8: Test It
 

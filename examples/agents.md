@@ -17,10 +17,3 @@
 1. Task unclear? → ask clarifying questions
 2. Task not mine? → reject with reasoning
 3. Task clear? → execute or delegate to subagent
-
-## OpenViking (L4 Semantic)
-
-- URL: http://localhost:1933
-- Account: myproject
-- Key: ~/.claude-lab/shared/secrets/openviking.key
-- Search: POST /api/v1/search/find
