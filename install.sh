@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # labops-install v1.0.0 -- Claude Code server installer
 #
-# Installs on a fresh Ubuntu 22.04 / 24.04 VPS:
+# Installs on a fresh Ubuntu 22.04 / 24.04 / 26.04 VPS:
 #   - labops user (dedicated, non-login-privileged)
-#   - Node.js 22 + Python 3.12 + Claude Code CLI
+#   - Node.js 22 + Python 3.12+ + Claude Code CLI
 #   - Assistant: telegram gateway -> systemd unit labops-assistant
 #
-# Operator runs `sudo -u labops claude login` once after install finishes.
+# После установки оператор один раз входит под labops (`su - labops`, затем `claude`)
+# и авторизует Claude Code; Telegram подключает сам агент (см. global CLAUDE.md).
 #
 # Usage:
 #   curl -fsSL https://labopsai.pro/install | sudo bash
@@ -27,8 +28,13 @@ readonly NODE_MAJOR="22"
 readonly LABOPS_USER="labops"
 readonly LABOPS_HOME="/home/labops"
 readonly CURL_OPTS=(-fsSL --max-time 60 --retry 2 --retry-delay 3)
+# Версии Ubuntu, на которых установщик прогнан целиком. Гайд на сайте обещает
+# все три -- список здесь должен совпадать с гайдом, иначе установка падает на шаге 0.
+readonly SUPPORTED_UBUNTU=("22.04" "24.04" "26.04")
 
 REPO_DIR=""
+# Интерпретатор для venv ассистента: python3.12 на 22.04, системный python3 на остальных.
+PYTHON_BIN="python3"
 
 # =============================================================================
 # TERMINAL OUTPUT
@@ -242,22 +248,23 @@ preflight() {
     # shellcheck disable=SC1091
     . /etc/os-release
 
+    local supported_list="${SUPPORTED_UBUNTU[*]}"
     if [[ "${ID:-}" != "ubuntu" ]]; then
-        die "Unsupported OS: ID=${ID:-unknown}. Ubuntu 22.04 or 24.04 required."
+        die "Unsupported OS: ID=${ID:-unknown}. Ubuntu ${supported_list// / or } required."
     fi
 
-    case "${VERSION_ID:-}" in
-        22.04|24.04)
-            ok "Ubuntu ${VERSION_ID} detected."
-            ;;
-        *)
-            if [[ "${LABOPS_ALLOW_UNTESTED_UBUNTU:-0}" == "1" ]]; then
-                warn "Ubuntu ${VERSION_ID:-?} is untested. Continuing (LABOPS_ALLOW_UNTESTED_UBUNTU=1)."
-            else
-                die "Ubuntu ${VERSION_ID:-?} is untested. Require 22.04 or 24.04, or set LABOPS_ALLOW_UNTESTED_UBUNTU=1."
-            fi
-            ;;
-    esac
+    local v supported="no"
+    for v in "${SUPPORTED_UBUNTU[@]}"; do
+        [[ "${VERSION_ID:-}" == "$v" ]] && supported="yes"
+    done
+    if [[ "$supported" == "yes" ]]; then
+        ok "Ubuntu ${VERSION_ID} detected."
+    elif [[ "${LABOPS_ALLOW_UNTESTED_UBUNTU:-0}" == "1" ]]; then
+        warn "Ubuntu ${VERSION_ID:-?} is untested. Continuing (LABOPS_ALLOW_UNTESTED_UBUNTU=1)."
+    else
+        die "Ubuntu ${VERSION_ID:-?} is untested. Require ${supported_list// / or }," \
+            "or set LABOPS_ALLOW_UNTESTED_UBUNTU=1."
+    fi
 
     if ! command -v curl &>/dev/null; then
         log "Bootstrapping curl..."
@@ -294,30 +301,49 @@ install_apt_deps() {
         logrotate \
         cron
 
-    # Python 3.12: native on Ubuntu 24.04. On 22.04 we need deadsnakes PPA
-    # because the default python3 is 3.10 and we require Python 3.12+.
+    # Python 3.12: native on Ubuntu 24.04 (26.04 ships newer). On 22.04 we need
+    # deadsnakes PPA because the default python3 is 3.10 and we require Python 3.12+.
     # shellcheck disable=SC1091
     . /etc/os-release
     case "${VERSION_ID:-}" in
         22.04)
+            # Сначала чиним сервер после прошлых версий установщика: они делали
+            # python3.12 системным python3, а на 22.04 это ломает apt_pkg --
+            # unattended-upgrades (автообновления безопасности) и add-apt-repository.
+            _restore_system_python3_2204
             if ! command -v python3.12 >/dev/null 2>&1; then
                 log "Adding deadsnakes PPA for Python 3.12 (Ubuntu 22.04)."
                 add-apt-repository -y ppa:deadsnakes/ppa >/dev/null
                 apt_get update -qq
             fi
             apt_get install -y -qq python3.12 python3.12-venv python3.12-dev python3-pip
-            # Point /usr/bin/python3 -> python3.12 so `python3 --version` shows 3.12.
-            update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 100 >/dev/null 2>&1 || true
-            update-alternatives --set python3 /usr/bin/python3.12 >/dev/null 2>&1 || true
+            # Системный python3 (3.10) не трогаем: 3.12 нужен только venv ассистента.
+            PYTHON_BIN="python3.12"
             ;;
-        24.04|*)
+        *)
             apt_get install -y -qq python3 python3-venv python3-pip python3-dev
             ;;
     esac
 
     local py_ver
-    py_ver=$(python3 --version 2>&1 | awk '{print $2}')
-    ok "Base packages installed (python3=${py_ver})."
+    py_ver=$("$PYTHON_BIN" --version 2>&1 | awk '{print $2}')
+    ok "Base packages installed (assistant python=${py_ver})."
+}
+
+# Возвращает /usr/bin/python3 к python3.10 из пакета, если прошлая версия
+# установщика переключила его на 3.12 через update-alternatives.
+_restore_system_python3_2204() {
+    if ! update-alternatives --query python3 2>/dev/null \
+            | grep -q '^Alternative: /usr/bin/python3.12$'; then
+        return 0
+    fi
+    warn "System python3 was switched to 3.12 by an older labops-install -- restoring python3.10."
+    update-alternatives --remove-all python3 >/dev/null 2>&1 || true
+    # --remove-all удаляет и саму ссылку /usr/bin/python3; переустановка пакета её вернёт.
+    apt_get install -y -qq --reinstall python3-minimal
+    if ! python3 -c 'import apt_pkg' 2>/dev/null; then
+        warn "python3 still cannot import apt_pkg -- check /usr/bin/python3 manually."
+    fi
 }
 
 # =============================================================================
@@ -472,15 +498,28 @@ install_assistant() {
 
     # Virtualenv + requirements
     local venv="${dir}/.venv"
+    # venv от прежних версий установщика смотрит на /usr/bin/python3. На 22.04 тот
+    # был 3.12, а после восстановления системного 3.10 venv теряет pip и пакеты --
+    # пересоздаём, если версия интерпретатора в venv не та, что нужна ассистенту.
+    if [[ -x "${venv}/bin/python" ]]; then
+        local py_ver_cmd='import sys; print("%d.%d" % sys.version_info[:2])'
+        local want_ver have_ver
+        want_ver=$("$PYTHON_BIN" -c "$py_ver_cmd")
+        have_ver=$("${venv}/bin/python" -c "$py_ver_cmd" 2>/dev/null || echo "none")
+        if [[ "$want_ver" != "$have_ver" ]]; then
+            warn "Assistant venv uses Python ${have_ver}, need ${want_ver} -- recreating."
+            rm -rf -- "$venv"
+        fi
+    fi
     if [[ ! -x "${venv}/bin/python" ]]; then
-        as_labops python3 -m venv "$venv"
+        as_labops "$PYTHON_BIN" -m venv "$venv"
     fi
     if [[ -f "${dir}/requirements.txt" ]]; then
         as_labops "${venv}/bin/pip" install --upgrade pip --quiet
         as_labops "${venv}/bin/pip" install -r "${dir}/requirements.txt" --quiet
     fi
 
-    # gateway config.json. Holds bot_token and allowed_user_ids inline.
+    # gateway config.json. Holds telegram_bot_token and allowlist_user_ids inline.
     # chmod 0600 because it contains a secret.
     local wsroot="${LABOPS_HOME}/.claude-lab/assistant/.claude"
     install -d -m 0755 -o "$LABOPS_USER" -g "$LABOPS_USER" \
@@ -495,15 +534,36 @@ install_assistant() {
         USER        "$LABOPS_USER" \
         AGENT_NAME  "assistant" \
         USER_NAME   "$OPERATOR_NAME"
-    # Inject bot_token and allowed_user_ids via jq. Values may be empty if the
+    # Inject the token and owner id via jq. Values may be empty if the
     # operator skipped the prompt -- agent fills them in later.
+    # Ключи должны совпадать с тем, что читает gateway.py: telegram_bot_token и
+    # allowlist_user_ids. С прежними bot_token/allowed_user_ids сервис падал
+    # с «No telegram token», а владелец оказывался вне списка доступа.
     local patched
     patched=$(mktemp)
     TMPFILES+=("$patched")
     local id_arg="null"
     [[ -n "$TG_USER_ID" ]] && id_arg="[${TG_USER_ID}]"
+    # Повторный запуск (им же чинится сервер после старых версий) не должен стирать
+    # уже подключённого бота: если токен/ID не заданы через env, берём их из
+    # текущего config.json, в том числе из прежних ключей bot_token/allowed_user_ids.
+    local existing_cfg="${dir}/config.json"
+    if [[ -f "$existing_cfg" ]]; then
+        if [[ -z "$ASSISTANT_BOT_TOKEN" ]]; then
+            ASSISTANT_BOT_TOKEN=$(jq -r '.agents.assistant
+                | if (.telegram_bot_token // "") != "" then .telegram_bot_token
+                  else (.bot_token // "") end' "$existing_cfg" 2>/dev/null || true)
+        fi
+        if [[ -z "$TG_USER_ID" ]]; then
+            local old_ids
+            old_ids=$(jq -c 'if ((.allowlist_user_ids // []) | length) > 0
+                then .allowlist_user_ids else (.allowed_user_ids // []) end' \
+                "$existing_cfg" 2>/dev/null || echo "[]")
+            [[ -n "$old_ids" && "$old_ids" != "[]" ]] && id_arg="$old_ids"
+        fi
+    fi
     jq --arg tok "$ASSISTANT_BOT_TOKEN" --argjson ids "${id_arg}" \
-       '.agents.assistant.bot_token = $tok | .allowed_user_ids = ($ids // [])' \
+       '.agents.assistant.telegram_bot_token = $tok | .allowlist_user_ids = ($ids // [])' \
        "$config_tmp" > "$patched"
     mv "$patched" "$config_tmp"
     install_as_user "$config_tmp" "${dir}/config.json" "$LABOPS_USER" 0600
@@ -675,30 +735,32 @@ install_sudoers() {
     tmp=$(mktemp)
     TMPFILES+=("$tmp")
 
+    # apt сюда намеренно не входит: `sudo apt` без пароля -- это root
+    # (apt -o APT::Update::Pre-Invoke::=<команда> выполняет что угодно), а агент
+    # работает без подтверждений и управляется из Telegram. Пакеты ставит владелец.
+    # Каждую команду systemctl разрешаем в двух написаниях юнита (с .service и без):
+    # sudoers сверяет аргументы буквально, и агент упирался в запрос пароля.
+    local unit cmd systemctl_cmds=""
+    for unit in labops-assistant labops-assistant.service; do
+        for cmd in start stop restart status is-active enable disable "enable --now"; do
+            systemctl_cmds+="    /usr/bin/systemctl ${cmd} ${unit}, \\"$'\n'
+        done
+    done
+
     cat > "$tmp" <<SUDOERS
 # labops-install v${LABOPS_VERSION} -- passwordless sudo for 'labops'.
-# Scope: systemctl + journalctl for two agent units, plus apt package mgmt
-# (Agent can run 'sudo apt' for self-repair / package install).
+# Scope: systemctl + journalctl for the agent unit only. No package management.
 
 Cmnd_Alias LABOPS_SYSTEMCTL = \\
-    /usr/bin/systemctl start labops-assistant, \\
-    /usr/bin/systemctl stop labops-assistant, \\
-    /usr/bin/systemctl restart labops-assistant, \\
-    /usr/bin/systemctl status labops-assistant, \\
-    /usr/bin/systemctl is-active labops-assistant, \\
-    /usr/bin/systemctl enable labops-assistant, \\
-    /usr/bin/systemctl disable labops-assistant, \\
-    /usr/bin/systemctl daemon-reload
+${systemctl_cmds}    /usr/bin/systemctl daemon-reload
 
 Cmnd_Alias LABOPS_JOURNAL = \\
     /usr/bin/journalctl -u labops-assistant, \\
-    /usr/bin/journalctl -u labops-assistant *
+    /usr/bin/journalctl -u labops-assistant *, \\
+    /usr/bin/journalctl -u labops-assistant.service, \\
+    /usr/bin/journalctl -u labops-assistant.service *
 
-Cmnd_Alias LABOPS_APT = \\
-    /usr/bin/apt, /usr/bin/apt *, \\
-    /usr/bin/apt-get, /usr/bin/apt-get *
-
-${LABOPS_USER} ALL=(root) NOPASSWD: LABOPS_SYSTEMCTL, LABOPS_JOURNAL, LABOPS_APT
+${LABOPS_USER} ALL=(root) NOPASSWD: LABOPS_SYSTEMCTL, LABOPS_JOURNAL
 SUDOERS
 
     # Validate syntax before installing -- a broken sudoers can lock out sudo.

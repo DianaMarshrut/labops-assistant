@@ -420,10 +420,36 @@ def _resolve_telegram_token(cfg: dict) -> str:
     """Resolve Telegram bot token from agent config. Raises if not found."""
     token = _resolve_token(cfg, "telegram_bot_token", "telegram_bot_token_file")
     if not token:
+        # Прежние версии установщика писали токен в ключ bot_token -- читаем его
+        # как запасной, чтобы такие серверы заработали без правки конфига.
+        token = _resolve_token(cfg, "bot_token", "bot_token_file")
+    if not token:
         raise ValueError(
             "No telegram token: set 'telegram_bot_token' or 'telegram_bot_token_file' in agent config"
         )
     return token
+
+
+def _resolve_allowlist(cfg: dict) -> list[int]:
+    """Return owner Telegram IDs allowed to talk to the agents.
+
+    Args:
+        cfg: Top-level gateway config.
+
+    Returns:
+        List of numeric Telegram user IDs; empty when none are configured.
+    """
+    # allowed_user_ids -- прежнее имя ключа из шаблона установщика; без запасного
+    # чтения бот молча игнорировал владельца («producer denied user_id=...»).
+    ids = cfg.get("allowlist_user_ids") or cfg.get("allowed_user_ids") or []
+    result: list[int] = []
+    for raw in ids:
+        # Telegram присылает id числом; строка "123" в конфиге иначе никогда не совпадёт.
+        try:
+            result.append(int(raw))
+        except (TypeError, ValueError):
+            log.warning(f"allowlist: skip non-numeric user id {raw!r}")
+    return result
 
 
 def _resolve_groq_key(cfg: dict) -> str | None:
@@ -3381,7 +3407,7 @@ def main() -> None:
         sys.exit(1)
 
     cfg = json.loads(CONFIG_PATH.read_text())
-    allowlist = cfg.get("allowlist_user_ids", [])
+    allowlist = _resolve_allowlist(cfg)
     allowlist_groups = cfg.get("allowlist_group_ids", [])
     agents = {
         k: v for k, v in cfg["agents"].items() if v.get("enabled")
